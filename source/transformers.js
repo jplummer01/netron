@@ -9,7 +9,7 @@ transformers.ModelFactory = class {
     async match(context) {
         const obj = await context.peek('json');
         if (obj) {
-            if (obj.model_type && obj.architectures) {
+            if (obj.architectures && (obj.model_type || obj.transformers_version)) {
                 return context.set('transformers.config', obj);
             }
             if (obj.version && obj.added_tokens && obj.model) {
@@ -33,6 +33,10 @@ transformers.ModelFactory = class {
                     if (obj["<|im_start|>"] || obj["<|endoftext|>"]) {
                         return context.set('transformers.vocab', obj);
                     }
+                }
+                const dtypes = new Set(['BF16', 'FP4', 'UE8']);
+                if (entries.every(([key, value]) => typeof key === 'string' && dtypes.has(value))) {
+                    return context.set('transformers.dtypes', obj);
                 }
             }
         }
@@ -63,7 +67,23 @@ transformers.ModelFactory = class {
     }
 
     filter(context, type) {
-        return context.type !== 'transformers.config' || (type !== 'transformers.tokenizer' && type !== 'transformers.tokenizer.config' && type !== 'transformers.vocab' && type !== 'transformers.generation_config' && type !== 'safetensors.preprocessor_config' && type !== 'safetensors.json');
+        const priority = new Map([
+            ['transformers.config', 7],
+            ['transformers.tokenizer', 6],
+            ['transformers.tokenizer.config', 5],
+            ['transformers.vocab', 4],
+            ['transformers.generation_config', 3],
+            ['transformers.preprocessor_config.json', 2],
+            ['transformers.dtypes', 1],
+            ['safetensors.json', 0],
+            ['safetensors', 0]
+        ]);
+        const a = priority.has(context.type) ? priority.get(context.type) : -1; // current
+        const b = priority.has(type) ? priority.get(type) : -1;
+        if (a !== -1 && b !== -1) {
+            return a < b;
+        }
+        return true;
     }
 };
 

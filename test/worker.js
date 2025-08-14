@@ -181,8 +181,8 @@ class DOMTokenList {
 
     add(...tokens) {
         const value = this._element.getAttribute('class') || '';
-        tokens = new Set(value.split(' ').concat(tokens));
-        this._element.setAttribute('class', Array.from(tokens).join(' '));
+        const set = new Set(value.split(' ').concat(...tokens));
+        this._element.setAttribute('class', Array.from(set).filter((s) => s).join(' '));
     }
 
     contains(token) {
@@ -603,7 +603,7 @@ export class Target {
             throw new Error(`Invalid runtime '${model.runtime}'.`);
         }
         if (model.metadata && (!Array.isArray(model.metadata) || !model.metadata.every((argument) => argument.name && (argument.value || argument.value === null || argument.value === '' || argument.value === false || argument.value === 0)))) {
-            throw new Error("Invalid model metadata.'");
+            throw new Error("Invalid model metadata.");
         }
         if (this.assert) {
             for (const assert of this.assert) {

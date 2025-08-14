@@ -214,7 +214,8 @@ view.View = class {
                     execute: async () => await this._host.execute('about')
                 });
             }
-            this._select = new view.TargetSelector(this, this._element('toolbar-navigator'));
+            const navigator = this._element('toolbar-navigator');
+            this._select = new view.TargetSelector(this, navigator);
             this._select.on('change', (sender, target) => this._updateActiveTarget([target]));
             await this._host.start();
         } catch (error) {
@@ -270,7 +271,7 @@ view.View = class {
                 this._find = state;
             });
             sidebar.on('select', (sender, value) => {
-                this.scrollTo(this._target.select([value]));
+                this._target.scrollTo(this._target.select([value]));
             });
             sidebar.on('focus', (sender, value) => {
                 this._target.focus([value]);
@@ -280,7 +281,7 @@ view.View = class {
             });
             sidebar.on('activate', (sender, value) => {
                 this._sidebar.close();
-                this.scrollTo(this._target.activate(value));
+                this._target.scrollTo(this._target.activate(value));
             });
             this._sidebar.open(sidebar, 'Find');
         }
@@ -476,14 +477,14 @@ view.View = class {
     }
 
     get activeTarget() {
-        if (Array.isArray(this._path) && this._path.length > 0) {
+        if (this._path.length > 0) {
             return this._path[0].target;
         }
         return null;
     }
 
     get activeSignature() {
-        if (Array.isArray(this._path) && this._path.length > 0) {
+        if (this._path.length > 0) {
             return this._path[0].signature;
         }
         return null;
@@ -506,7 +507,7 @@ view.View = class {
         this._path = stack;
         const status = await this.render(this.activeTarget, this.activeSignature);
         if (status !== '') {
-            this.update(null);
+            this.model = null;
             this._path = [];
             this._activeTarget = null;
         }
@@ -599,9 +600,9 @@ view.View = class {
             this._target.unregister();
             this._target = null;
         }
-        const canvas = this._element('canvas');
-        while (canvas.lastChild) {
-            canvas.removeChild(canvas.lastChild);
+        const element = this._element('target');
+        while (element.lastChild) {
+            element.removeChild(element.lastChild);
         }
         let status = '';
         if (target) {
@@ -1488,9 +1489,6 @@ view.Graph = class extends grapher.Graph {
     constructor(view, compound) {
         super(compound);
         this.view = view;
-        this.host = view.host;
-        this.model = view.model;
-        this.options = view.options;
         this.counter = 0;
         this._nodeKey = 0;
         this._values = new Map();
@@ -1498,6 +1496,18 @@ view.Graph = class extends grapher.Graph {
         this._table = new Map();
         this._selection = new Set();
         this._zoom = 1;
+    }
+
+    get model() {
+        return this.view.model;
+    }
+
+    get host() {
+        return this.view.host;
+    }
+
+    get options() {
+        return this.view.options;
     }
 
     createNode(node) {
@@ -1660,10 +1670,17 @@ view.Graph = class extends grapher.Graph {
     }
 
     build(document) {
-        const canvas = document.getElementById('canvas');
-        while (canvas.lastChild) {
-            canvas.removeChild(canvas.lastChild);
+        const element = document.getElementById('target');
+        while (element.lastChild) {
+            element.removeChild(element.lastChild);
         }
+        const canvas = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        canvas.setAttribute('id', 'canvas');
+        canvas.setAttribute('class', 'canvas');
+        canvas.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        canvas.setAttribute('width', '100%');
+        canvas.setAttribute('height', '100%');
+        element.appendChild(canvas);
         // Workaround for Safari background drag/zoom issue:
         // https://stackoverflow.com/questions/40887193/d3-js-zoom-is-not-working-with-mousewheel-in-safari
         const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -1963,7 +1980,8 @@ view.Graph = class extends grapher.Graph {
                 }
             }
         };
-        const container = this._element('target');
+        const document = this.host.document;
+        const container = document.getElementById('target');
         const touchEndHandler = () => {
             container.removeEventListener('touchmove', touchMoveHandler, { passive: true });
             container.removeEventListener('touchcancel', touchEndHandler, { passive: true });
@@ -4015,10 +4033,14 @@ view.FindSidebar = class extends view.Control {
     }
 
     emit(event, data) {
-        if (this._events && this._events[event]) {
-            for (const callback of this._events[event]) {
-                callback(this, data);
+        try {
+            if (this._events && this._events[event]) {
+                for (const callback of this._events[event]) {
+                    callback(this, data);
+                }
             }
+        } catch (error) {
+            this.error(error, false);
         }
     }
 
@@ -4350,7 +4372,7 @@ view.Quantization = class {
             return this.value.map((value, index) => `${index.toString().padStart(size, ' ')}: ${value}`).join('\n');
         } else if (this.type === 'annotation') {
             return Array.from(this.value).map(([name, value]) => `${name} = ${value}`).join('\n');
-        } else if (/^q\d_[01k]$/.test(this.type) || /^iq\d_[xsnlm]+$/.test(this.type)) {
+        } else if (/^q\d_[01k]$/.test(this.type) || /^iq\d_[xsnlm]+$/.test(this.type) || this.type === 'mxfp4') {
             return '';
         }
         throw new view.Error(`Unknown quantization type '${this.type}'.`);
@@ -5758,7 +5780,7 @@ view.Context = class {
                     switch (type) {
                         case 'json': {
                             try {
-                                const buffer = stream.peek(Math.min(this.stream.length, 0x1000));
+                                const buffer = stream.peek(Math.min(stream.length, 0x1000));
                                 if (stream.length < 0x7ffff000 &&
                                     (buffer.length < 8 || String.fromCharCode.apply(null, buffer.slice(0, 8)) !== '\x89HDF\r\n\x1A\n') &&
                                     (buffer.some((v) => v === 0x22 || v === 0x5b || v === 0x5d || v === 0x7b || v === 0x7d))) {
@@ -5793,11 +5815,15 @@ view.Context = class {
                         }
                         case 'xml': {
                             try {
-                                const xml = await import('./xml.js');
-                                const reader = xml.TextReader.open(this._stream);
-                                if (reader) {
-                                    const obj = reader.read();
-                                    this._content.set(type, obj);
+                                const buffer = stream.peek(Math.min(this.stream.length, 0x1000));
+                                const content = String.fromCharCode.apply(null, buffer);
+                                if (stream.length < 0x7ffff000 && content.indexOf('<') !== -1 && content.indexOf('</') !== -1) {
+                                    const xml = await import('./xml.js');
+                                    const reader = xml.TextReader.open(this._stream);
+                                    if (reader) {
+                                        const obj = reader.read();
+                                        this._content.set(type, obj);
+                                    }
                                 }
                             } catch {
                                 // continue regardless of error
@@ -6208,6 +6234,7 @@ view.ModelFactoryService = class {
         this.register('./tf', ['.pb', '.meta', '.pbtxt', '.prototxt', '.txt', '.pt', '.json', '.index', '.ckpt', '.graphdef', '.pbmm', /.data-[0-9][0-9][0-9][0-9][0-9]-of-[0-9][0-9][0-9][0-9][0-9]$/, /^events.out.tfevents./, /^.*group\d+-shard\d+of\d+(\.bin)?$/], ['.zip']);
         this.register('./tensorrt', ['.trt', '.trtmodel', '.engine', '.model', '.txt', '.uff', '.pb', '.tmfile', '.onnx', '.pth', '.dnn', '.plan', '.pt', '.dat', '.bin'], [], [/^ptrt/, /^ftrt/]);
         this.register('./keras', ['.h5', '.hd5', '.hdf5', '.keras', '.json', '.cfg', '.model', '.pb', '.pth', '.weights', '.pkl', '.lite', '.tflite', '.ckpt', '.pb', 'model.weights.npz', /^.*group\d+-shard\d+of\d+(\.bin)?$/], ['.zip'], [/^\x89HDF\r\n\x1A\n/]);
+        this.register('./safetensors', ['.safetensors', '.safetensors.index.json']);
         this.register('./numpy', ['.npz', '.npy', '.pkl', '.pickle', '.model', '.model2', '.mge', '.joblib', '']);
         this.register('./lasagne', ['.pkl', '.pickle', '.joblib', '.model', '.pkl.z', '.joblib.z']);
         this.register('./lightgbm', ['.txt', '.pkl', '.model']);
@@ -6251,7 +6278,6 @@ view.ModelFactoryService = class {
         this.register('./mlir', ['.mlir', '.mlir.txt', '.mlirbc']);
         this.register('./sentencepiece', ['.model']);
         this.register('./hailo', ['.hn', '.har', '.metadata.json']);
-        this.register('./safetensors', ['.safetensors', '.safetensors.index.json']);
         this.register('./tvm', ['.json', '.params']);
         this.register('./dot', ['.dot'], [], [/^\s*(\/\*[\s\S]*?\*\/|\/\/.*|#.*)?\s*digraph\s*([A-Za-z][A-Za-z0-9-_]*|".*?")?\s*{/m]);
         this.register('./catboost', ['.cbm']);
@@ -6751,7 +6777,7 @@ view.ModelFactoryService = class {
     _filter(context) {
         const identifier = context.identifier.toLowerCase().split('/').pop();
         const stream = context.stream;
-        if (stream && stream.length < 0x7FFFFFFF) {
+        if (stream) {
             const buffer = stream.peek(Math.min(4096, stream.length));
             const content = String.fromCharCode.apply(null, buffer);
             const list = this._factories.filter((entry) =>

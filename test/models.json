@@ -2168,6 +2168,14 @@
   },
   {
     "type":     "gguf",
+    "target":   "gpt-oss-20b-MXFP4.gguf",
+    "source":   "https://github.com/user-attachments/files/21702620/gpt-oss-20b-MXFP4.gguf.zip[gpt-oss-20b-MXFP4.gguf]",
+    "format":   "GGUF v3",
+    "tags":     "quantization",
+    "link":     "https://github.com/lutzroeder/netron/issues/1209"
+  },
+  {
+    "type":     "gguf",
     "target":   "mixtral-8x7b-v0.1.Q4_K_M.gguf",
     "source":   "https://github.com/lutzroeder/netron/files/13802180/mixtral-8x7b-v0.1.Q4_K_M.gguf.zip[mixtral-8x7b-v0.1.Q4_K_M.gguf]",
     "format":   "GGUF v3",
@@ -2472,6 +2480,20 @@
     "type":     "keras",
     "target":   "InceptionV3.h5.zip",
     "source":   "https://github.com/lutzroeder/netron/files/6098151/InceptionV3.h5.zip",
+    "format":   "Keras v2.4.0",
+    "link":     "https://github.com/lutzroeder/netron/issues/57"
+  },
+  {
+    "type":     "keras",
+    "target":   "input_data.keras",
+    "source":   "https://github.com/user-attachments/files/21760875/input_data.zip[input_data.keras]",
+    "format":   "Keras v3.11.2",
+    "link":     "https://github.com/lutzroeder/netron/issues/57"
+  },
+  {
+    "type":     "keras",
+    "target":   "MobileNetV2.h5.zip",
+    "source":   "https://github.com/lutzroeder/netron/files/6098152/MobileNetV2.h5.zip",
     "format":   "Keras v2.4.0",
     "link":     "https://github.com/lutzroeder/netron/issues/57"
   },
@@ -4293,6 +4315,13 @@
   },
   {
     "type":     "onnx",
+    "target":   "gpt-oss-20b.onnx",
+    "source":   "https://github.com/user-attachments/files/21698806/gpt-oss-20b.onnx.zip[gpt-oss-20b.onnx]",
+    "format":   "ONNX v10",
+    "link":     "https://github.com/lutzroeder/netron/issues/1208"
+  },
+  {
+    "type":     "onnx",
     "target":   "if_k1.onnx",
     "source":   "https://github.com/user-attachments/files/19404101/if_k1.onnx.zip[if_k1.onnx]",
     "format":   "ONNX v6",
@@ -4316,20 +4345,6 @@
     "type":     "onnx",
     "target":   "inception_v1_opset_9.onnx.zip",
     "source":   "https://github.com/lutzroeder/netron/files/15214459/inception_v1_opset_9.onnx.zip",
-    "format":   "ONNX v3",
-    "link":     "https://github.com/lutzroeder/netron/issues/6"
-  },
-  {
-    "type":     "onnx",
-    "target":   "inception_v2_opset_6.onnx.zip",
-    "source":   "https://github.com/lutzroeder/netron/files/6572388/inception_v2_opset_6.onnx.zip",
-    "format":   "ONNX v3",
-    "link":     "https://github.com/lutzroeder/netron/issues/6"
-  },
-  {
-    "type":     "onnx",
-    "target":   "inception_v2_opset_9.onnx.zip",
-    "source":   "https://github.com/lutzroeder/netron/files/6572391/inception_v2_opset_9.onnx.zip",
     "format":   "ONNX v3",
     "link":     "https://github.com/lutzroeder/netron/issues/6"
   },
@@ -4536,14 +4551,6 @@
     "source":   "https://github.com/lutzroeder/netron/files/8191468/ort_github_issue_4031.onnx.ort.zip[ort_github_issue_4031.onnx.ort]",
     "format":   "ONNX Runtime v7",
     "link":     "https://github.com/lutzroeder/netron/issues/767"
-  },
-  {
-    "type":     "onnx",
-    "target":   "Phi-3-medium-128k-instruct-onnx-directml.onnx",
-    "source":   "https://huggingface.co/microsoft/Phi-3-medium-128k-instruct-onnx-directml/resolve/main/directml-int4-awq-block-128/model.onnx?download=true",
-    "format":   "ONNX v8",
-    "tags":     "skip-render",
-    "link":     "https://github.com/lutzroeder/netron/issues/6"
   },
   {
     "type":     "onnx",

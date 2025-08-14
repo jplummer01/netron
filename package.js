@@ -9,7 +9,7 @@ import * as url from 'url';
 const args = process.argv.slice(2);
 
 const read = (match) => {
-    if (args.length > 0 || (!match || args[0] === match)) {
+    if (args.length > 0 && (!match || args[0] === match)) {
         return args.shift();
     }
     return null;
@@ -512,11 +512,46 @@ const lint = async () => {
     await exec('python -m ruff check . --quiet');
 };
 
+const test = async (target) => {
+    let models = true;
+    while (true) {
+        /* eslint-disable no-await-in-loop */
+        if (target === 'desktop' || read('desktop')) {
+            target = null;
+            models = false;
+            await exec('npx playwright install --with-deps');
+            const host = process.platform === 'linux' && (process.env.GITHUB_ACTIONS || process.env.CI) ? 'xvfb-run -a ' : '';
+            await exec(`${host}npx playwright test --config=test/playwright.config.js --project=desktop`);
+            continue;
+        }
+        if (target === 'browser' || read('browser')) {
+            target = null;
+            models = false;
+            if (process.platform !== 'win32') {
+                await exec('npx playwright install --with-deps');
+                const headed = process.env.GITHUB_ACTIONS || process.env.CI ? '' :  ' --headed';
+                await exec(`npx playwright test --config=test/playwright.config.js --project=browser${headed}`);
+            }
+            continue;
+        }
+        break;
+        /* eslint-enable no-await-in-loop */
+    }
+    if (models) {
+        target = target || args.join(' ');
+        await exec(`node test/models.js ${target}`);
+    }
+};
+
 const validate = async () => {
     writeLine('lint');
     await lint();
     writeLine('test');
-    await exec('node test/models.js tag:validation');
+    await test('tag:validation');
+    writeLine('test desktop');
+    await test('desktop');
+    writeLine('test browser');
+    await test('browser');
 };
 
 const update = async () => {
@@ -683,6 +718,7 @@ const main = async () => {
             case 'publish': await publish(); break;
             case 'version': await version(); break;
             case 'lint': await lint(); break;
+            case 'test': await test(); break;
             case 'validate': await validate(); break;
             case 'update': await update(); break;
             case 'pull': await pull(); break;
