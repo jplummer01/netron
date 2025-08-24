@@ -213,9 +213,9 @@ pytorch.Graph = class {
         } else if (torch && module instanceof torch.export.exported_program.ExportedProgram && module.graph) {
             const exported_program = module;
             const graph = exported_program.graph;
-            const inputs_to_parameters = exported_program.graph_signature.inputs_to_parameters();
-            const inputs_to_buffers = exported_program.graph_signature.inputs_to_buffers();
-            const inputs_to_lifted_tensor_constants = exported_program.graph_signature.inputs_to_lifted_tensor_constants();
+            const inputs_to_parameters = exported_program.graph_signature.inputs_to_parameters;
+            const inputs_to_buffers = exported_program.graph_signature.inputs_to_buffers;
+            const inputs_to_lifted_tensor_constants = exported_program.graph_signature.inputs_to_lifted_tensor_constants;
             const values = new Map();
             values.map = (obj) => {
                 if (!values.has(obj)) {
@@ -289,7 +289,7 @@ pytorch.Graph = class {
                 const node = new pytorch.Node(execution, metadata, obj.name, null, obj, null, values);
                 this.nodes.push(node);
             }
-            for (const input_spec of exported_program.graph_signature.user_inputs()) {
+            for (const input_spec of exported_program.graph_signature.user_inputs) {
                 if (nodes.has(input_spec)) {
                     const node = nodes.get(input_spec);
                     const value = values.map(node);
@@ -347,6 +347,7 @@ pytorch.Node = class {
 
     constructor(execution, metadata, name, type, obj, initializers, values, stack) {
         const torch = execution ? execution.torch : null;
+        const builtins = execution ? execution.builtins : null;
         this.name = name || '';
         this.nodes = [];
         this.attributes = [];
@@ -562,7 +563,15 @@ pytorch.Node = class {
             }
         } else if (torch && obj instanceof torch.fx.node.Node) {
             if (obj.op === 'call_function') {
-                const name = obj.target.name;
+                let name = null;
+                const target = obj.target;
+                if (target instanceof torch._ops.OpOverload) {
+                    name = target.name();
+                } else if (builtins.isinstance(target, builtins.function)) {
+                    name = target.__name__;
+                } else {
+                    throw new pytorch.Error(`Unsupported target '${target}'.`);
+                }
                 this.type = {
                     identifier: name,
                     name: name.indexOf('::') === -1 ? name : name.split('::').pop().split('.')[0]
