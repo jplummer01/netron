@@ -69,6 +69,7 @@
         { "ext": "uff",         "name": "UFF Model"                },
         { "ext": "xmodel",      "name": "Vitis AI Model"           }
     ],
+    "afterPack": "publish/afterPack.js",
     "publish": [
         { "provider": "github", "releaseType": "release" }
     ],
